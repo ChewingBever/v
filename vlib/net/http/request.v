@@ -172,7 +172,7 @@ pub fn (req &Request) referer() string {
 	return req.header.get(.referer) or { '' }
 }
 
-pub fn parse_request_no_body(mut reader io.BufferedReader) ?Request {
+pub fn parse_request_head(mut reader io.BufferedReader) ?Request {
 	// request line
 	mut line := reader.read_line() ?
 	method, target, version := parse_request_line(line) ?
