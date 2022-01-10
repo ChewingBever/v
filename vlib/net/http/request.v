@@ -172,6 +172,7 @@ pub fn (req &Request) referer() string {
 	return req.header.get(.referer) or { '' }
 }
 
+// Parse the header of a raw HTTP request into a Request object
 pub fn parse_request_head(mut reader io.BufferedReader) ?Request {
 	// request line
 	mut line := reader.read_line() ?
@@ -193,6 +194,26 @@ pub fn parse_request_head(mut reader io.BufferedReader) ?Request {
 		header: header
 		version: version
 	}
+}
+
+// Reads the reader object into the body field of the Request
+pub fn append_request_body(mut reader io.BufferedReader, mut req Request) Request {
+	// body
+	mut body := []byte{}
+	if length := req.header.get(.content_length) {
+		n := length.int()
+		if n > 0 {
+			body = []byte{len: n}
+			mut count := 0
+			for count < body.len {
+				count += reader.read(mut body[count..]) or { break }
+			}
+		}
+	}
+
+	req.body = body
+
+	return req
 }
 
 // Parse a raw HTTP request into a Request object
