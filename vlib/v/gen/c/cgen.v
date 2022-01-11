@@ -645,6 +645,9 @@ pub fn (mut g Gen) init() {
 				g.cheaders.writeln(get_guarded_include_text('<stddef.h>', 'The C compiler can not find <stddef.h>. Please install build-essentials')) // size_t, ptrdiff_t
 			}
 		}
+		if g.pref.nofloat {
+			g.cheaders.writeln('#define VNOFLOAT 1')
+		}
 		g.cheaders.writeln(c_builtin_types)
 		if g.pref.is_bare {
 			g.cheaders.writeln(c_bare_headers)
@@ -4434,11 +4437,6 @@ fn (mut g Gen) ident(node ast.Ident) {
 }
 
 fn (mut g Gen) cast_expr(node ast.CastExpr) {
-	if g.is_amp {
-		// &Foo(0) => ((Foo*)0)
-		g.out.go_back(1)
-	}
-	g.is_amp = false
 	sym := g.table.sym(node.typ)
 	if sym.kind in [.sum_type, .interface_] {
 		g.expr_with_cast(node.expr, node.expr_type, node.typ)
