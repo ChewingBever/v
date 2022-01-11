@@ -211,7 +211,7 @@ pub fn append_request_body(mut reader io.BufferedReader, mut req Request) Reques
 		}
 	}
 
-	req.body = body
+	req.data = body.bytestr()
 
 	return req
 }
