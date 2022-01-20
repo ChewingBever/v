@@ -308,7 +308,7 @@ fn (mut p Parser) struct_decl() ast.StructDecl {
 	}
 	mut ret := 0
 	// println('reg type symbol $name mod=$p.mod')
-	ret = p.table.register_type_symbol(t)
+	ret = p.table.register_sym(t)
 	// allow duplicate c struct declarations
 	if ret == -1 && language != .c {
 		p.error_with_pos('cannot register struct `$name`, another type with this name exists',
@@ -335,7 +335,7 @@ fn (mut p Parser) struct_decl() ast.StructDecl {
 	}
 }
 
-fn (mut p Parser) struct_init(short_syntax bool) ast.StructInit {
+fn (mut p Parser) struct_init(typ_str string, short_syntax bool) ast.StructInit {
 	first_pos := (if short_syntax && p.prev_tok.kind == .lcbr { p.prev_tok } else { p.tok }).position()
 	typ := if short_syntax { ast.void_type } else { p.parse_type() }
 	p.expr_mod = ''
@@ -416,6 +416,7 @@ fn (mut p Parser) struct_init(short_syntax bool) ast.StructInit {
 	p.is_amp = saved_is_amp
 	return ast.StructInit{
 		unresolved: typ.has_flag(.generic)
+		typ_str: typ_str
 		typ: typ
 		fields: fields
 		update_expr: update_expr
@@ -467,7 +468,7 @@ fn (mut p Parser) interface_decl() ast.InterfaceDecl {
 		return ast.InterfaceDecl{}
 	}
 	// Declare the type
-	reg_idx := p.table.register_type_symbol(
+	reg_idx := p.table.register_sym(
 		is_public: is_pub
 		kind: .interface_
 		name: interface_name
