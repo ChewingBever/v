@@ -51,7 +51,7 @@ pub fn (mut c Checker) struct_decl(mut node ast.StructDecl) {
 			if field.typ != 0 {
 				if !field.typ.is_ptr() {
 					if c.table.unaliased_type(field.typ) == struct_typ_idx {
-						c.error('Field `$field.name` is part of `$node.name`, they can not both have the same type',
+						c.error('field `$field.name` is part of `$node.name`, they can not both have the same type',
 							field.type_pos)
 					}
 				}
@@ -82,7 +82,7 @@ pub fn (mut c Checker) struct_decl(mut node ast.StructDecl) {
 						}
 					} else {
 						c.error('incompatible initializer for field `$field.name`: $err.msg',
-							field.default_expr.position())
+							field.default_expr.pos())
 					}
 				}
 				// Check for unnecessary inits like ` = 0` and ` = ''`
@@ -330,10 +330,16 @@ pub fn (mut c Checker) struct_init(mut node ast.StructInit) ast.Type {
 					continue
 				}
 				if field.has_default_expr {
-					if field.default_expr is ast.StructInit && field.default_expr_typ == 0 {
-						idx := c.table.find_type_idx(field.default_expr.typ_str)
-						if idx != 0 {
-							info.fields[i].default_expr_typ = ast.new_type(idx)
+					if field.default_expr_typ == 0 {
+						if field.default_expr is ast.StructInit {
+							idx := c.table.find_type_idx(field.default_expr.typ_str)
+							if idx != 0 {
+								info.fields[i].default_expr_typ = ast.new_type(idx)
+							}
+						} else {
+							if const_field := c.table.global_scope.find_const('$field.default_expr') {
+								info.fields[i].default_expr_typ = const_field.typ
+							}
 						}
 					}
 					continue
@@ -388,7 +394,7 @@ pub fn (mut c Checker) struct_init(mut node ast.StructInit) ast.Type {
 		node.update_expr_type = update_type
 		if c.table.type_kind(update_type) != .struct_ {
 			s := c.table.type_to_str(update_type)
-			c.error('expected struct, found `$s`', node.update_expr.position())
+			c.error('expected struct, found `$s`', node.update_expr.pos())
 		} else if update_type != node.typ {
 			from_sym := c.table.sym(update_type)
 			to_sym := c.table.sym(node.typ)
@@ -397,13 +403,13 @@ pub fn (mut c Checker) struct_init(mut node ast.StructInit) ast.Type {
 			// TODO this check is too strict
 			if !c.check_struct_signature(from_info, to_info) {
 				c.error('struct `$from_sym.name` is not compatible with struct `$to_sym.name`',
-					node.update_expr.position())
+					node.update_expr.pos())
 			}
 		}
 		if !node.update_expr.is_lvalue() {
 			// cgen will repeat `update_expr` for each field
 			// so enforce an lvalue for efficiency
-			c.error('expression is not an lvalue', node.update_expr.position())
+			c.error('expression is not an lvalue', node.update_expr.pos())
 		}
 	}
 	return node.typ
